@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kafka-avro-order-pipeline"
+version = "1.0.0"
+description = "Kafka and Avro order-processing assignment with retries and a DLQ"
+requires-python = ">=3.11"
+dependencies = [
+  "confluent-kafka==2.15.0",
+  "fastavro==1.12.2",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra --basetemp=.pytest-tmp"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"

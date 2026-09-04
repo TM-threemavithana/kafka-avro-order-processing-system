@@ -1,0 +1,72 @@
+name: kafka-order-assignment
+
+x-app-environment: &app-environment
+  BOOTSTRAP_SERVERS: broker:19092
+  ORDERS_TOPIC: orders
+  RETRY_TOPIC: orders.retry
+  DLQ_TOPIC: orders.dlq
+  CONSUMER_GROUP: order-processor-v1
+  MAX_RETRIES: 3
+  RETRY_BACKOFF_SECONDS: 1
+  TEMPORARY_FAILURE_PRODUCT: TEMPORARY_FAILURE
+  PERMANENT_FAILURE_PRODUCT: PERMANENT_FAILURE
+  TEMPORARY_FAILURES_BEFORE_SUCCESS: 2
+  STATE_FILE: /app/data/averages.json
+
+services:
+  broker:
+    image: apache/kafka-native:4.3.1
+    hostname: broker
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:19092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:29093
+      KAFKA_LISTENERS: CONTROLLER://:29093,PLAINTEXT://:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      CLUSTER_ID: 4L6g3nShT-eMCtK--X86sw
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+
+  topic-init:
+    build: .
+    depends_on:
+      broker:
+        condition: service_started
+    environment: *app-environment
+    entrypoint: ["python", "-m", "order_pipeline.init_topics"]
+
+  consumer:
+    build: .
+    depends_on:
+      topic-init:
+        condition: service_completed_successfully
+    environment: *app-environment
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  producer:
+    build: .
+    profiles: ["demo"]
+    depends_on:
+      topic-init:
+        condition: service_completed_successfully
+    environment: *app-environment
+    entrypoint: ["python", "-m", "order_pipeline.producer"]
+
+  dlq-viewer:
+    build: .
+    profiles: ["tools"]
+    depends_on:
+      topic-init:
+        condition: service_completed_successfully
+    environment: *app-environment
+    entrypoint: ["python", "-m", "order_pipeline.dlq_viewer"]

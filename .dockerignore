@@ -1,0 +1,12 @@
+.git
+.github
+.pytest_cache
+.venv
+__pycache__
+*.py[cod]
+data
+docs
+scripts
+tests
+tmp
+Assignement Chapter 3.pdf

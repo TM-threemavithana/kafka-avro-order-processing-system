@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "Order",
+  "namespace": "lk.assignment.orders",
+  "doc": "A purchase transaction sent through the Kafka order pipeline.",
+  "fields": [
+    {
+      "name": "orderId",
+      "type": "string",
+      "doc": "Unique identifier for the order"
+    },
+    {
+      "name": "product",
+      "type": "string",
+      "doc": "Name of the purchased item"
+    },
+    {
+      "name": "price",
+      "type": "float",
+      "doc": "Price of the product"
+    }
+  ]
+}
