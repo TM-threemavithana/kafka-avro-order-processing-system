@@ -32,12 +32,12 @@ def non_negative_float(value: str) -> float:
 def generate_orders(
     count: int,
     *,
-    seed: int,
+    seed: int | None,
     demo: bool,
     temporary_failure_product: str,
     permanent_failure_product: str,
 ) -> list[dict[str, object]]:
-    """Generate a repeatable batch; demo mode includes both failure paths."""
+    """Generate orders; a supplied seed makes the batch repeatable."""
     if demo and count < 3:
         raise ValueError("Demo mode needs at least three messages")
 
@@ -64,7 +64,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--count", type=positive_int, default=10)
     parser.add_argument("--interval", type=non_negative_float, default=0.35)
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional seed for a repeatable batch (default: system randomness).",
+    )
     parser.add_argument(
         "--demo",
         action="store_true",

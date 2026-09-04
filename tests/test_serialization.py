@@ -24,6 +24,10 @@ def test_order_round_trip_uses_avro_binary() -> None:
         {"orderId": "1001", "product": "", "price": 10.0},
         {"orderId": "1001", "product": "Item1", "price": "10.0"},
         {"orderId": "1001", "product": "Item1", "price": -1.0},
+        {"orderId": "1001", "product": "Item1", "price": float("nan")},
+        {"orderId": "1001", "product": "Item1", "price": float("inf")},
+        {"orderId": "1001", "product": "Item1", "price": float("-inf")},
+        {"orderId": "1001", "product": "Item1", "price": 1e100},
         {"orderId": "1001", "product": "Item1", "price": 10.0, "extra": 1},
     ],
 )

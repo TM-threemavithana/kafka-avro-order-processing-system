@@ -15,6 +15,7 @@ permanent failures to a Dead Letter Queue (DLQ).
 - DLQ routing when temporary retries are exhausted.
 - Manual Kafka offset commits after processing or successful rerouting.
 - Persistent, duplicate-aware aggregate state across consumer restarts.
+- Safe rejection of conflicting records that reuse an existing `orderId`.
 - A DLQ viewer that decodes the failed Avro order and its failure metadata.
 - Automated tests and a GitHub Actions test workflow.
 
@@ -26,7 +27,7 @@ flowchart LR
     O --> C[Order consumer]
     R[orders.retry topic] --> C
     C -->|success| A[Running averages]
-    C -->|temporary failure| R
+    C -->|temporary failure + not-before time| R
     C -->|permanent or retries exhausted| D[orders.dlq topic]
     D --> V[DLQ viewer]
     A --> S[data/averages.json]
@@ -79,7 +80,7 @@ Wait until the consumer prints `Consumer ready`.
 ### Terminal 2 - produce the demonstration orders
 
 ```powershell
-docker compose run --rm producer --count 10 --interval 0.35 --demo
+docker compose run --rm producer --count 10 --interval 0.35 --seed 42 --demo
 ```
 
 The `--demo` option sends eight normal orders followed by:
@@ -128,7 +129,9 @@ python -m pytest
 
 The tests cover Avro round trips and validation, overall and per-product
 averages, persistence, duplicate protection, temporary/permanent failure
-classification, retry metadata, and demonstration batch generation.
+classification, retry timing, non-blocking deferral, and demonstration batch
+generation. GitHub Actions also runs `scripts/integration-test.ps1` against a
+real Kafka broker to verify aggregation, retry success, and the DLQ end to end.
 
 ## Configuration
 
@@ -165,7 +168,9 @@ Messages are keyed by `orderId`. The producer uses Kafka's idempotent producer
 mode and waits for broker acknowledgements. The consumer disables automatic
 commits and commits only after a message is processed or successfully published
 to the retry/DLQ topic. Persistent processed-order IDs prevent the aggregate
-from double-counting an order following redelivery.
+from double-counting an order following redelivery. Retry messages include a
+not-before timestamp; the consumer pauses only the affected retry partition
+until it becomes due, allowing unrelated orders to continue processing.
 
 This is an at-least-once teaching implementation. A production system could use
 Kafka transactions for atomic consume-transform-produce behavior, a distributed

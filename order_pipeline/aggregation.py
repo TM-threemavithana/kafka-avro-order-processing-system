@@ -21,6 +21,10 @@ class AverageSnapshot:
     duplicate: bool = False
 
 
+class ConflictingDuplicateOrderError(ValueError):
+    """Raised when an order ID is reused with different order data."""
+
+
 class RunningAverages:
     """Maintain global and per-product averages and ignore duplicate order IDs."""
 
@@ -30,6 +34,7 @@ class RunningAverages:
         self.total_sum = 0.0
         self.products: dict[str, dict[str, float | int]] = {}
         self.processed_order_ids: set[str] = set()
+        self.processed_orders: dict[str, dict[str, str | float]] = {}
         if state_file and state_file.exists():
             self._load()
 
@@ -39,20 +44,41 @@ class RunningAverages:
         price = float(order["price"])
 
         if order_id in self.processed_order_ids:
-            product_state = self.products[product]
+            original = self.processed_orders.get(order_id)
+            if original is not None:
+                original_product = str(original["product"])
+                original_price = float(original["price"])
+                if product != original_product or price != original_price:
+                    raise ConflictingDuplicateOrderError(
+                        f"orderId {order_id!r} was already processed as "
+                        f"product={original_product!r}, price={original_price}; "
+                        f"received product={product!r}, price={price}"
+                    )
+                product = original_product
+                price = original_price
+
+            product_state = self.products.get(product)
+            if product_state is None:
+                raise ConflictingDuplicateOrderError(
+                    f"orderId {order_id!r} is marked as processed, but product "
+                    f"{product!r} has no aggregate state"
+                )
+            product_count = int(product_state["count"])
+            if self.total_count <= 0 or product_count <= 0:
+                raise ValueError("Persisted aggregate counts must be greater than zero")
             return AverageSnapshot(
                 order_id=order_id,
                 product=product,
                 price=price,
                 total_count=self.total_count,
                 total_average=self.total_sum / self.total_count,
-                product_count=int(product_state["count"]),
-                product_average=float(product_state["sum"])
-                / int(product_state["count"]),
+                product_count=product_count,
+                product_average=float(product_state["sum"]) / product_count,
                 duplicate=True,
             )
 
         self.processed_order_ids.add(order_id)
+        self.processed_orders[order_id] = {"product": product, "price": price}
         self.total_count += 1
         self.total_sum += price
 
@@ -81,7 +107,16 @@ class RunningAverages:
         self.total_count = int(state["total_count"])
         self.total_sum = float(state["total_sum"])
         self.products = state["products"]
-        self.processed_order_ids = set(state["processed_order_ids"])
+        raw_processed_orders = state.get("processed_orders", {})
+        self.processed_orders = {
+            str(order_id): {
+                "product": str(order_data["product"]),
+                "price": float(order_data["price"]),
+            }
+            for order_id, order_data in raw_processed_orders.items()
+        }
+        self.processed_order_ids = set(state.get("processed_order_ids", []))
+        self.processed_order_ids.update(self.processed_orders)
 
     def _save(self) -> None:
         if self.state_file is None:
@@ -93,6 +128,7 @@ class RunningAverages:
             "total_sum": self.total_sum,
             "products": self.products,
             "processed_order_ids": sorted(self.processed_order_ids),
+            "processed_orders": self.processed_orders,
         }
         with temporary_file.open("w", encoding="utf-8") as state_handle:
             json.dump(state, state_handle, indent=2, sort_keys=True)

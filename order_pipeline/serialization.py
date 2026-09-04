@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Mapping
@@ -21,6 +22,7 @@ def load_schema(path: Path = SCHEMA_PATH) -> dict[str, Any]:
 
 
 ORDER_SCHEMA = load_schema()
+AVRO_FLOAT_MAX = 3.4028234663852886e38
 
 
 def validate_order(order: Mapping[str, object]) -> None:
@@ -37,8 +39,16 @@ def validate_order(order: Mapping[str, object]) -> None:
     price = order["price"]
     if isinstance(price, bool) or not isinstance(price, (int, float)):
         raise ValueError("price must be numeric")
-    if float(price) < 0:
+    try:
+        numeric_price = float(price)
+    except OverflowError as error:
+        raise ValueError("price is outside the Avro float range") from error
+    if not math.isfinite(numeric_price):
+        raise ValueError("price must be finite")
+    if numeric_price < 0:
         raise ValueError("price cannot be negative")
+    if numeric_price > AVRO_FLOAT_MAX:
+        raise ValueError("price is outside the Avro float range")
     if not validate(dict(order), ORDER_SCHEMA, raise_errors=False):
         raise ValueError("Order does not conform to order.avsc")
 

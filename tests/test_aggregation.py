@@ -3,7 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from order_pipeline.aggregation import RunningAverages, format_snapshot
+from order_pipeline.aggregation import (
+    ConflictingDuplicateOrderError,
+    RunningAverages,
+    format_snapshot,
+)
 
 
 def test_global_and_per_product_running_averages() -> None:
@@ -33,6 +37,26 @@ def test_duplicate_order_is_not_counted_twice() -> None:
     assert averages.total_sum == pytest.approx(10.0)
 
 
+@pytest.mark.parametrize(
+    "conflicting_order",
+    [
+        {"orderId": "1", "product": "Item2", "price": 10.0},
+        {"orderId": "1", "product": "Item1", "price": 11.0},
+    ],
+)
+def test_conflicting_duplicate_is_rejected(
+    conflicting_order: dict[str, object],
+) -> None:
+    averages = RunningAverages()
+    averages.update({"orderId": "1", "product": "Item1", "price": 10.0})
+
+    with pytest.raises(ConflictingDuplicateOrderError):
+        averages.update(conflicting_order)
+
+    assert averages.total_count == 1
+    assert averages.total_sum == pytest.approx(10.0)
+
+
 def test_state_survives_restart(tmp_path: Path) -> None:
     state_file = tmp_path / "averages.json"
     first_instance = RunningAverages(state_file)
@@ -45,4 +69,14 @@ def test_state_survives_restart(tmp_path: Path) -> None:
 
     assert snapshot.total_count == 2
     assert snapshot.total_average == pytest.approx(15.0)
-    assert json.loads(state_file.read_text(encoding="utf-8"))["total_count"] == 2
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+    assert state["total_count"] == 2
+    assert state["processed_orders"]["1"] == {
+        "price": 12.0,
+        "product": "Item1",
+    }
+
+    with pytest.raises(ConflictingDuplicateOrderError):
+        second_instance.update(
+            {"orderId": "1", "product": "Changed", "price": 12.0}
+        )

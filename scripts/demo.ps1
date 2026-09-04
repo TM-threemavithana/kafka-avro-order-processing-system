@@ -4,7 +4,7 @@ Write-Host "Starting Kafka, creating topics, and building the consumer..."
 docker compose up -d --build broker topic-init consumer
 
 Write-Host "Publishing a 10-order demonstration batch..."
-docker compose run --rm producer --count 10 --interval 0.35 --demo
+docker compose run --rm producer --count 10 --interval 0.35 --seed 42 --demo
 
 Write-Host "Waiting for retry processing to finish..."
 Start-Sleep -Seconds 6

@@ -1,7 +1,7 @@
 # Kafka-Based Order Processing System
 
-**Student name:** [Enter your name]
-**Student ID:** [Enter your student ID]
+**Student name:** Threemavithana T.M.
+**Student ID:** EG/2021/4835
 **Module:** Big Data
 **Assignment:** Chapter 3 - Kafka Order Processing
 
@@ -94,8 +94,10 @@ on demand.
 ### 6.1 Temporary failures
 
 An order whose product is `TEMPORARY_FAILURE` fails on attempts 0 and 1. Each
-failure is sent to `orders.retry` after exponential backoff. It succeeds on
-attempt 2 and then updates the averages.
+failure is sent to `orders.retry` with a not-before timestamp. The consumer
+pauses only that retry partition until the exponential-backoff period expires,
+so unrelated orders continue to be processed. It succeeds on attempt 2 and
+then updates the averages.
 
 The initial backoff is one second. The delay is calculated as:
 
@@ -137,12 +139,18 @@ The automated test suite verifies:
 
 - binary Avro serialization and deserialization;
 - rejection of invalid order records;
+- rejection of non-finite and out-of-range prices;
 - global and per-product average calculations;
-- aggregate persistence and duplicate handling;
+- aggregate persistence, duplicate handling, and conflicting-ID rejection;
 - temporary failures followed by success;
 - permanent failures on every attempt;
-- Kafka retry-header encoding and validation;
+- Kafka retry-header encoding, timing, and validation;
+- non-blocking retry partition scheduling;
 - inclusion of both failure types in a demonstration batch.
+
+The GitHub Actions workflow also runs a Docker-based integration test against a
+real Kafka broker. It verifies the final count of nine successful orders, the
+temporary retry path, and the permanent DLQ record.
 
 Run the test suite with `python -m pytest`.
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 from typing import Iterable, Mapping
 
@@ -28,6 +29,22 @@ def retry_attempt(headers: Mapping[str, str]) -> int:
     if attempt < 0:
         raise ValueError("retry-attempt cannot be negative")
     return attempt
+
+
+def retry_not_before(headers: Mapping[str, str]) -> float | None:
+    """Return the Unix timestamp at which a retry may be processed."""
+    raw_timestamp = headers.get("retry-not-before")
+    if raw_timestamp is None:
+        return None
+    try:
+        timestamp = float(raw_timestamp)
+    except ValueError as error:
+        raise ValueError(
+            f"Invalid retry-not-before header: {raw_timestamp!r}"
+        ) from error
+    if not math.isfinite(timestamp) or timestamp < 0:
+        raise ValueError("retry-not-before must be a finite, non-negative timestamp")
+    return timestamp
 
 
 def utc_now() -> str:

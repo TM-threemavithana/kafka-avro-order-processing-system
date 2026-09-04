@@ -2,20 +2,23 @@
 
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass
 from pathlib import Path
 
 
-def _positive_int(name: str, default: int) -> int:
+def _non_negative_int(name: str, default: int) -> int:
     value = int(os.getenv(name, str(default)))
     if value < 0:
         raise ValueError(f"{name} must be zero or greater")
     return value
 
 
-def _positive_float(name: str, default: float) -> float:
+def _non_negative_float(name: str, default: float) -> float:
     value = float(os.getenv(name, str(default)))
+    if not math.isfinite(value):
+        raise ValueError(f"{name} must be a finite number")
     if value < 0:
         raise ValueError(f"{name} must be zero or greater")
     return value
@@ -45,15 +48,17 @@ class Settings:
             retry_topic=os.getenv("RETRY_TOPIC", "orders.retry"),
             dlq_topic=os.getenv("DLQ_TOPIC", "orders.dlq"),
             consumer_group=os.getenv("CONSUMER_GROUP", "order-processor-v1"),
-            max_retries=_positive_int("MAX_RETRIES", 3),
-            retry_backoff_seconds=_positive_float("RETRY_BACKOFF_SECONDS", 1.0),
+            max_retries=_non_negative_int("MAX_RETRIES", 3),
+            retry_backoff_seconds=_non_negative_float(
+                "RETRY_BACKOFF_SECONDS", 1.0
+            ),
             temporary_failure_product=os.getenv(
                 "TEMPORARY_FAILURE_PRODUCT", "TEMPORARY_FAILURE"
             ),
             permanent_failure_product=os.getenv(
                 "PERMANENT_FAILURE_PRODUCT", "PERMANENT_FAILURE"
             ),
-            temporary_failures_before_success=_positive_int(
+            temporary_failures_before_success=_non_negative_int(
                 "TEMPORARY_FAILURES_BEFORE_SUCCESS", 2
             ),
             state_file=Path(os.getenv("STATE_FILE", "data/averages.json")),

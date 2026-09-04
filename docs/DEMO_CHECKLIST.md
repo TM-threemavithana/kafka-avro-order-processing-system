@@ -2,7 +2,7 @@
 
 ## Before presenting
 
-- Replace the name and student ID placeholders in `ASSIGNMENT_REPORT.md`.
+- Confirm the report shows `Threemavithana T.M.` and `EG/2021/4835`.
 - Start Docker Desktop.
 - Open PowerShell in the repository directory.
 - For a clean run, use `docker compose down` and delete
@@ -16,7 +16,7 @@
 3. Run `docker compose up -d --build broker topic-init consumer`.
 4. Run `docker compose logs -f consumer` in the first terminal.
 5. In a second terminal, run
-   `docker compose run --rm producer --count 10 --interval 0.35 --demo`.
+   `docker compose run --rm producer --count 10 --interval 0.35 --seed 42 --demo`.
 6. Point out each live `PROCESSED` line and the changing overall average.
 7. Point out the two `RETRY` cycles and eventual successful processing.
 8. Point out the direct `DLQ published` line for the permanent failure.
@@ -30,6 +30,6 @@
 “The producer validates each order against `order.avsc` and sends binary Avro to
 Kafka. The consumer updates both overall and per-product running averages. It
 commits an offset only after processing or safely rerouting the message.
-Temporary errors use exponential-backoff retries, while permanent errors go
-straight to the dead letter topic. The DLQ keeps the original Avro order and
-stores diagnostic details in Kafka headers.”
+Temporary errors use exponential-backoff retries without blocking unrelated
+orders, while permanent errors go straight to the dead letter topic. The DLQ
+keeps the original Avro order and stores diagnostic details in Kafka headers.”
