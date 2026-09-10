@@ -1,0 +1,46 @@
+{
+  "student": "Threemavithana T.M.",
+  "registrationNumber": "EG/2021/4835",
+  "capturedAt": "2026-09-09T23:33:36.719673+05:30",
+  "previousStateBackup": "C:\\8 sem\\Big Data assignment\\data\\averages.pre-evidence-20260909-233336.json",
+  "verified": {
+    "ordersPublished": 10,
+    "ordersAggregated": 9,
+    "overallAverage": 197.86,
+    "temporaryRetryAttempts": 2,
+    "dlqMessagesShown": 1,
+    "testsPassed": 39
+  },
+  "files": [
+    {
+      "path": "EG_2021_4835_Live_Demonstration_Transcript.md",
+      "bytes": 11948,
+      "sha256": "d16ffadb1d36b4b23dd9434cbb6be135901a1a167d6c3df98851e902420b2881"
+    },
+    {
+      "path": "screenshots/01_avro_schema_and_architecture.png",
+      "bytes": 117797,
+      "sha256": "5a4e11e684c1320bee01b6ded32fc52021fb356a61870d5074c684038a9aad44"
+    },
+    {
+      "path": "screenshots/02_producer_output.png",
+      "bytes": 179786,
+      "sha256": "6deb047b4c646bfd32b0734b017a118baf0825621f26faba7d5b8e1b3bacf6b1"
+    },
+    {
+      "path": "screenshots/03_consumer_retry_and_dlq.png",
+      "bytes": 253161,
+      "sha256": "604960524f11d06e08a959209742cc2f32e4d334b4a6d3f5528d2ae06b1b66f1"
+    },
+    {
+      "path": "screenshots/04_dlq_viewer.png",
+      "bytes": 148038,
+      "sha256": "282ec1228509a578c30347a83a71e76ea55ec4a3cb7c0dc3e1734b530ae559cf"
+    },
+    {
+      "path": "screenshots/05_tests_39_passed.png",
+      "bytes": 103783,
+      "sha256": "3f0a1be251c5cd91edb8c011042eec0f7ea130cb5c8d89a29c1ee3cfc69401b0"
+    }
+  ]
+}

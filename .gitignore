@@ -9,4 +9,7 @@ htmlcov/
 data/*.json
 data/*.tmp
 tmp/
+tools/
+.test-tmp/
+output/rendered_report/
 .env
